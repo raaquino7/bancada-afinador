@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tarraxa</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232747f5'/%3E%3Cpath d='M11 7v8a5 5 0 0 0 10 0V7M16 20v6' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Identidade Tarraxa: tela neutra e silenciosa, azul-cobalto só na agulha e na marca.
+   O gesto da marca: quando a corda afina, a tela inteira fica verde. */
+:root {
+  color-scheme: light;
+  --bg: #f4f4f1;
+  --text: #15171c;
+  --muted: #6d727e;
+  --line: #d9dbe0;
+  --brand: #2747f5;
+  --on-brand: #ffffff;
+  --ok: #0c9a6b;
+  --tune: #3ddc9d;
+  --display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0e1014;
+    --text: #f1f2f4;
+    --muted: #8a90a0;
+    --line: #272b35;
+    --brand: #7189ff;
+    --on-brand: #0e1014;
+    --ok: #3ddc9d;
+  }
+}
+/* Afinada: os mesmos tokens, trocados de uma vez. */
+html body.in {
+  --bg: var(--tune);
+  --text: #05281b;
+  --muted: rgba(5, 40, 27, 0.66);
+  --line: rgba(5, 40, 27, 0.24);
+  --brand: #05281b;
+  --on-brand: var(--tune);
+  --ok: #05281b;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.4;
+  display: flex;
+  justify-content: center;
+  transition: background-color 200ms ease;
+}
+button, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+.app {
+  width: 100%;
+  max-width: 420px;
+  min-height: 100%;
+  padding: 18px 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+header { display: flex; align-items: center; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 8px; color: var(--brand); }
+.brand svg { width: 22px; height: 22px; }
+.brand h1 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 21px;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--text);
+}
+.status { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 7px; }
+.status i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.status.live i { background: var(--ok); }
+
+.pickers { display: flex; gap: 10px; }
+.select { position: relative; flex: 1; min-width: 0; }
+.select::after {
+  content: "";
+  position: absolute;
+  right: 14px; top: 50%;
+  width: 7px; height: 7px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 11px 32px 11px 14px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+}
+select option { color: #15171c; background: #fff; }
+
+/* mostrador */
+.meter { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; }
+.meter svg { width: 100%; max-width: 340px; height: auto; display: block; }
+.tick { stroke: var(--line); stroke-width: 2; stroke-linecap: round; }
+.tick.center { stroke: var(--text); }
+.scale-label { fill: var(--muted); font-size: 15px; font-family: var(--body); text-anchor: middle; }
+#needle { transform-origin: 160px 186px; transition: transform 110ms linear; }
+#needle line { stroke: var(--brand); stroke-width: 3.5; stroke-linecap: round; }
+.meter.idle #needle { opacity: 0.25; }
+@media (prefers-reduced-motion: reduce) { #needle, body { transition: none; } }
+
+.note {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 128px;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  display: flex;
+  align-items: flex-start;
+  margin-top: 4px;
+}
+.note sub { font-size: 30px; font-weight: 500; letter-spacing: 0; color: var(--muted); align-self: flex-end; margin: 0 0 12px 6px; }
+.meter.idle .note { color: var(--line); }
+.solfege { color: var(--muted); min-height: 21px; }
+.hint { font-weight: 600; font-size: 17px; margin-top: 10px; min-height: 24px; text-align: center; }
+.meter.idle .hint { font-weight: 400; color: var(--muted); }
+.readout { display: flex; gap: 16px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; min-height: 18px; }
+
+/* cordas */
+.strings { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.string-row { display: flex; gap: 10px; justify-content: center; width: 100%; }
+.string-col { flex: 0 1 54px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.string {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: transparent;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.string small { font-size: 10px; font-weight: 500; color: var(--muted); margin: 6px 0 0 1px; }
+.string.target { border-color: var(--brand); color: var(--brand); }
+.string.locked { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
+.string.locked small { color: var(--on-brand); }
+.string.tuned::after {
+  content: "";
+  position: absolute;
+  top: 1px; right: 1px;
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: var(--ok);
+  border: 2px solid var(--bg);
+}
+.steps { display: flex; gap: 3px; }
+.steps button {
+  flex: 1;
+  border: 1px solid var(--line);
+  background: transparent;
+  border-radius: 8px;
+  padding: 1px 0;
+  color: var(--muted);
+  line-height: 1.3;
+}
+.caption { color: var(--muted); font-size: 12.5px; text-align: center; }
+
+/* ações */
+.actions { display: flex; flex-direction: column; gap: 12px; }
+.btn-primary {
+  border: 1.5px solid var(--brand);
+  background: var(--brand);
+  color: var(--on-brand);
+  border-radius: 999px;
+  padding: 14px;
+  font-weight: 600;
+  font-size: 16px;
+}
+.btn-primary.on { background: transparent; color: var(--text); border-color: var(--line); }
+.minor { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.link { background: none; border: 0; padding: 6px 0; font-weight: 600; color: var(--brand); display: flex; align-items: center; gap: 7px; }
+.link svg { width: 15px; height: 15px; flex: none; }
+.stepper { display: flex; align-items: center; color: var(--muted); font-size: 13px; }
+.stepper button { background: none; border: 1px solid var(--line); border-radius: 50%; width: 28px; height: 28px; padding: 0; color: var(--text); line-height: 1; }
+.stepper output { min-width: 78px; text-align: center; font-variant-numeric: tabular-nums; color: var(--text); }
+.msg { color: #c2331c; font-size: 13px; margin: 0; }
+.msg:empty { display: none; }
+
+/* abas e metrônomo */
+.tabs { display: flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.tab { border: 0; background: none; padding: 6px 13px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.tab[aria-selected="true"] { background: var(--text); color: var(--bg); }
+.view { flex: 1; display: flex; flex-direction: column; gap: 18px; }
+.metro { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 300px; }
+.beats { display: flex; gap: 10px; align-items: center; justify-content: center; height: 28px; margin-bottom: 14px; }
+.beats i { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--line); }
+.beats i.strong { width: 16px; height: 16px; }
+.beats i.on { background: var(--brand); border-color: var(--brand); transform: scale(1.35); }
+.bpm-row { display: flex; align-items: center; justify-content: center; gap: 14px; width: 100%; }
+.bpm {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 128px;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  min-width: 2.6ch;
+  text-align: center;
+}
+.round { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 1.5px solid var(--line); background: none; font-size: 22px; line-height: 1; padding: 0; }
+.tempo-name { font-weight: 600; font-size: 17px; margin-top: 6px; }
+.tempo-unit { color: var(--muted); font-size: 13px; }
+input[type="range"] { width: 100%; max-width: 320px; margin-top: 18px; accent-color: var(--brand); }
+.sig { text-align: center; color: var(--muted); font-size: 11.5px; letter-spacing: 0.04em; }
+.sig b { font-weight: 600; color: var(--text); }
+</style>
+</head>
+<body>
+<main class="app">
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M7 3v8a5 5 0 0 0 10 0V3M12 16v5"/></svg>
+      <h1>tarraxa</h1>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Ferramenta">
+      <button type="button" class="tab" role="tab" id="tabTuner" aria-controls="viewTuner" aria-selected="true">Afinador</button>
+      <button type="button" class="tab" role="tab" id="tabMetro" aria-controls="viewMetro" aria-selected="false">Metrônomo</button>
+    </div>
+  </header>
+
+  <div class="view" id="viewTuner" role="tabpanel" aria-labelledby="tabTuner">
+    <section class="pickers">
+      <div class="select"><select id="instrument" aria-label="Instrumento"></select></div>
+      <div class="select" id="tuningField"><select id="tuning" aria-label="Afinação"></select></div>
+    </section>
+
+    <section class="meter idle" id="meter">
+      <svg viewBox="0 0 320 112" role="img" aria-label="Desvio em cents">
+        <g id="ticks"></g>
+        <g id="needle"><line x1="160" y1="108" x2="160" y2="50"/></g>
+      </svg>
+      <div class="note"><span id="noteName">–</span><sub id="noteOct"></sub></div>
+      <div class="solfege" id="solfege"></div>
+      <div class="hint" id="hint">Ligue o microfone e toque uma corda</div>
+      <div class="readout"><span id="cents"></span><span id="hz"></span></div>
+    </section>
+
+    <section class="strings" id="stringsBox">
+      <div class="string-row" id="stringRow"></div>
+      <div class="caption" id="lockInfo"></div>
+    </section>
+
+    <section class="actions">
+      <button type="button" class="btn-primary" id="micBtn">Ligar microfone</button>
+      <div class="minor">
+        <button type="button" class="link" id="toneBtn"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 2.5v11l9-5.5z"/></svg><span id="toneText">Ouvir Lá</span></button>
+        <div class="stepper">
+          <button type="button" id="a4down" aria-label="Diminuir o Lá de referência">−</button>
+          <output id="a4out">Lá 440 Hz</output>
+          <button type="button" id="a4up" aria-label="Aumentar o Lá de referência">+</button>
+        </div>
+      </div>
+      <p class="msg" id="msg" role="alert"></p>
+    </section>
+  </div>
+
+  <div class="view" id="viewMetro" role="tabpanel" aria-labelledby="tabMetro" hidden>
+    <section class="pickers">
+      <div class="select"><select id="meterSig" aria-label="Compasso"></select></div>
+      <div class="select"><select id="subdiv" aria-label="Subdivisão"></select></div>
+    </section>
+
+    <section class="metro">
+      <div class="beats" id="beats" aria-hidden="true"></div>
+      <div class="bpm-row">
+        <button type="button" class="round" id="bpmDown" aria-label="Diminuir 1 BPM">−</button>
+        <output class="bpm" id="bpmOut">100</output>
+        <button type="button" class="round" id="bpmUp" aria-label="Aumentar 1 BPM">+</button>
+      </div>
+      <div class="tempo-name" id="tempoName">Andante</div>
+      <div class="tempo-unit">batidas por minuto</div>
+      <input type="range" id="bpmRange" min="30" max="260" step="1" value="100" aria-label="Andamento em BPM">
+    </section>
+
+    <section class="actions">
+      <button type="button" class="btn-primary" id="metroBtn">Iniciar</button>
+      <div class="minor">
+        <button type="button" class="link" id="tapBtn"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="5"/></svg><span>Marcar o tempo no toque</span></button>
+      </div>
+    </section>
+  </div>
+
+  <footer class="sig">um app <b>Bancada</b></footer>
+</main>
+
+<script>
+/*CORE-START*/
+// Núcleo puro (sem DOM): é esta parte que será portada para Dart no app Flutter.
+const NOTE_NAMES = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+const SOLFEGE = ['Dó','Dó♯','Ré','Ré♯','Mi','Fá','Fá♯','Sol','Sol♯','Lá','Lá♯','Si'];
+const SOLFEGE_BY_LETTER = { C:'Dó', D:'Ré', E:'Mi', F:'Fá', G:'Sol', A:'Lá', B:'Si' };
+
+function midiToFreq(midi, a4) { return a4 * Math.pow(2, (midi - 69) / 12); }
+function freqToMidi(freq, a4) { return 69 + 12 * Math.log2(freq / a4); }
+
+// "Eb2", "F#3", "A4" -> { midi, label, oct, solfege }
+function parseNote(s) {
+  const m = /^([A-G])([#b]?)(-?\d)$/.exec(s);
+  const base = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 }[m[1]];
+  const acc = m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0;
+  const oct = Number(m[3]);
+  const sign = acc === 1 ? '♯' : acc === -1 ? '♭' : '';
+  return { midi: (oct + 1) * 12 + base + acc, label: m[1] + sign, oct, solfege: SOLFEGE_BY_LETTER[m[1]] + sign };
+}
+function noteFromMidi(midi) {
+  const pc = ((midi % 12) + 12) % 12;
+  return { midi, label: NOTE_NAMES[pc], oct: Math.floor(midi / 12) - 1, solfege: SOLFEGE[pc] };
+}
+
+// Média de pares: reduz a taxa de amostragem pela metade com um filtro simples.
+function decimate2(buf) {
+  const out = new Float32Array(buf.length >> 1);
+  for (let i = 0; i < out.length; i++) out[i] = 0.5 * (buf[2 * i] + buf[2 * i + 1]);
+  return out;
+}
+
+// Algoritmo YIN. Devolve { freq, clarity } ou null quando não há nota clara.
+function detectPitch(buf, sampleRate, minFreq = 27, maxFreq = 1400) {
+  const n = buf.length;
+  let sum = 0;
+  for (let i = 0; i < n; i++) sum += buf[i] * buf[i];
+  if (Math.sqrt(sum / n) < 0.006) return null;
+
+  const tauMax = Math.min(Math.floor(sampleRate / minFreq), Math.floor(n / 2));
+  const tauMin = Math.max(2, Math.floor(sampleRate / maxFreq));
+  const w = n - tauMax;
+  const cmnd = new Float32Array(tauMax + 1);
+  cmnd[0] = 1;
+  let running = 0;
+  for (let tau = 1; tau <= tauMax; tau++) {
+    let d = 0;
+    for (let i = 0; i < w; i++) { const diff = buf[i] - buf[i + tau]; d += diff * diff; }
+    running += d;
+    cmnd[tau] = running > 0 ? d * tau / running : 1;
+  }
+
+  let best = -1;
+  for (let tau = tauMin; tau < tauMax; tau++) {
+    if (cmnd[tau] < 0.12) {
+      while (tau + 1 < tauMax && cmnd[tau + 1] < cmnd[tau]) tau++;
+      best = tau;
+      break;
+    }
+  }
+  if (best < 0) {
+    let min = 1;
+    for (let tau = tauMin; tau < tauMax; tau++) if (cmnd[tau] < min) { min = cmnd[tau]; best = tau; }
+    if (best < 0 || min > 0.3) return null;
+  }
+  // Interpolação parabólica para precisão abaixo de uma amostra.
+  let tau = best;
+  if (best > 1 && best < tauMax) {
+    const a = cmnd[best - 1], b = cmnd[best], c = cmnd[best + 1];
+    const den = a - 2 * b + c;
+    if (den !== 0) tau = best + 0.5 * (a - c) / den;
+  }
+  return { freq: sampleRate / tau, clarity: 1 - cmnd[best] };
+}
+
+const INSTRUMENTS = [
+  { id: 'chromatic', name: 'Cromático', tunings: [] },
+  { id: 'violao', name: 'Violão', tunings: [
+    ['Padrão', 'E2 A2 D3 G3 B3 E4'], ['Drop D', 'D2 A2 D3 G3 B3 E4'],
+    ['Meio tom abaixo', 'Eb2 Ab2 Db3 Gb3 Bb3 Eb4'], ['Um tom abaixo', 'D2 G2 C3 F3 A3 D4'],
+    ['DADGAD', 'D2 A2 D3 G3 A3 D4'], ['Open G', 'D2 G2 D3 G3 B3 D4'],
+    ['Open D', 'D2 A2 D3 F#3 A3 D4'], ['Open E', 'E2 B2 E3 G#3 B3 E4'] ] },
+  { id: 'guitarra', name: 'Guitarra', tunings: [
+    ['Padrão', 'E2 A2 D3 G3 B3 E4'], ['Drop D', 'D2 A2 D3 G3 B3 E4'],
+    ['Meio tom abaixo', 'Eb2 Ab2 Db3 Gb3 Bb3 Eb4'], ['Um tom abaixo', 'D2 G2 C3 F3 A3 D4'],
+    ['Drop C', 'C2 G2 C3 F3 A3 D4'], ['Open G', 'D2 G2 D3 G3 B3 D4'],
+    ['Open D', 'D2 A2 D3 F#3 A3 D4'], ['Open E', 'E2 B2 E3 G#3 B3 E4'] ] },
+  { id: 'baixo4', name: 'Baixo 4', tunings: [
+    ['Padrão', 'E1 A1 D2 G2'], ['Drop D', 'D1 A1 D2 G2'],
+    ['Meio tom abaixo', 'Eb1 Ab1 Db2 Gb2'], ['Um tom abaixo', 'D1 G1 C2 F2'] ] },
+  { id: 'baixo5', name: 'Baixo 5', tunings: [
+    ['Padrão (Si grave)', 'B0 E1 A1 D2 G2'], ['Dó agudo', 'E1 A1 D2 G2 C3'] ] },
+  { id: 'ukulele', name: 'Ukulele', tunings: [
+    ['Padrão (Sol agudo)', 'G4 C4 E4 A4'], ['Sol grave', 'G3 C4 E4 A4'],
+    ['Barítono', 'D3 G3 B3 E4'], ['Em Ré', 'A4 D4 F#4 B4'] ] },
+  { id: 'cavaquinho', name: 'Cavaquinho', tunings: [
+    ['Padrão (Ré Sol Si Ré)', 'D4 G4 B4 D5'], ['Natural (Ré Sol Si Mi)', 'D4 G4 B4 E5'],
+    ['Bandolim', 'G3 D4 A4 E5'] ] },
+  { id: 'violino', name: 'Violino', tunings: [ ['Padrão', 'G3 D4 A4 E5'] ] },
+  { id: 'bandolim', name: 'Bandolim', tunings: [ ['Padrão', 'G3 D4 A4 E5'] ] },
+];
+/*CORE-END*/
+
+// ---------- Estado ----------
+const $ = id => document.getElementById(id);
+const state = { inst: 'violao', tuning: 0, a4: 440, custom: {}, locked: null, lastTarget: null, tuned: new Set() };
+try {
+  const saved = JSON.parse(localStorage.getItem('afinador') || '{}');
+  if (INSTRUMENTS.some(i => i.id === saved.inst)) state.inst = saved.inst;
+  if (Number.isInteger(saved.tuning)) state.tuning = saved.tuning;
+  if (saved.a4 >= 415 && saved.a4 <= 466) state.a4 = saved.a4;
+  if (saved.custom && typeof saved.custom === 'object') state.custom = saved.custom;
+} catch (e) {}
+function save() {
+  try { localStorage.setItem('afinador', JSON.stringify({ inst: state.inst, tuning: state.tuning, a4: state.a4, custom: state.custom })); } catch (e) {}
+}
+const instrument = () => INSTRUMENTS.find(i => i.id === state.inst);
+const isChromatic = () => state.inst === 'chromatic';
+const isCustom = () => !isChromatic() && state.tuning === instrument().tunings.length;
+function strings() {
+  const inst = instrument();
+  if (isChromatic()) return [];
+  if (isCustom()) return state.custom[inst.id].map(noteFromMidi);
+  return inst.tunings[state.tuning][1].split(' ').map(parseNote);
+}
+
+// ---------- Mostrador ----------
+const CX = 160, CY = 186, R = 140, SPAN = 42; // graus para ±50 cents
+function polar(r, deg) { const a = (deg - 90) * Math.PI / 180; return [CX + r * Math.cos(a), CY + r * Math.sin(a)]; }
+(function drawScale() {
+  let html = '';
+  for (let c = -50; c <= 50; c += 5) {
+    const deg = c / 50 * SPAN, len = c === 0 ? 20 : c % 25 === 0 ? 12 : 7;
+    const [x1, y1] = polar(R, deg), [x2, y2] = polar(R - len, deg);
+    html += `<line class="tick${c === 0 ? ' center' : ''}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+  }
+  const [lx, ly] = polar(R + 4, -SPAN - 6), [rx, ry] = polar(R + 4, SPAN + 6);
+  html += `<text class="scale-label" x="${lx.toFixed(1)}" y="${(ly + 6).toFixed(1)}">♭</text><text class="scale-label" x="${rx.toFixed(1)}" y="${(ry + 6).toFixed(1)}">♯</text>`;
+  $('ticks').innerHTML = html;
+})();
+
+function showIdle() {
+  const m = $('meter');
+  m.className = 'meter idle';
+  wasTuned = false;
+  document.body.classList.remove('in');
+  $('needle').style.transform = 'rotate(0deg)';
+  const s = state.locked != null ? strings()[state.locked] : null;
+  $('noteName').textContent = s ? s.label : '–';
+  $('noteOct').textContent = s ? s.oct : '';
+  $('solfege').textContent = s ? s.solfege : '';
+  $('hint').textContent = running ? 'Toque uma corda' : 'Ligue o microfone e toque uma corda';
+  $('cents').textContent = '';
+  $('hz').textContent = '';
+}
+
+let inTuneSince = 0, wasTuned = false;
+function showReading(freq) {
+  const midi = freqToMidi(freq, state.a4);
+  let target, idx = null;
+  if (isChromatic()) {
+    target = noteFromMidi(Math.round(midi));
+  } else {
+    const ss = strings();
+    idx = state.locked;
+    if (idx == null) {
+      idx = 0;
+      ss.forEach((s, i) => { if (Math.abs(midi - s.midi) < Math.abs(midi - ss[idx].midi)) idx = i; });
+    }
+    target = ss[idx];
+    if (state.lastTarget !== idx) { state.lastTarget = idx; markStrings(); updateToneLabel(); }
+  }
+  const cents = (midi - target.midi) * 100;
+  // Entra em 4 cents e só sai em 7, para a tela não piscar na fronteira.
+  const tuned = Math.abs(cents) <= (wasTuned ? 7 : 4);
+  wasTuned = tuned;
+  document.body.classList.toggle('in', tuned);
+  $('meter').className = 'meter ' + (tuned ? 'in' : cents < 0 ? 'low' : 'high');
+  $('needle').style.transform = `rotate(${(Math.max(-50, Math.min(50, cents)) / 50 * SPAN).toFixed(2)}deg)`;
+  $('noteName').textContent = target.label;
+  $('noteOct').textContent = target.oct;
+  $('solfege').textContent = target.solfege;
+  $('hint').textContent = tuned ? 'Afinada' : cents < 0 ? 'Baixa: aperte a corda' : 'Alta: afrouxe a corda';
+  const r = Math.round(cents);
+  $('cents').textContent = (r > 0 ? '+' : r < 0 ? '−' : '') + Math.abs(r) + ' cents';
+  $('hz').textContent = freq.toFixed(1) + ' Hz';
+
+  const now = performance.now();
+  if (!tuned) inTuneSince = 0;
+  else if (!inTuneSince) inTuneSince = now;
+  else if (idx != null && now - inTuneSince > 500 && !state.tuned.has(idx)) { state.tuned.add(idx); markStrings(); }
+}
+
+// ---------- Controles ----------
+function renderInstruments() {
+  $('instrument').innerHTML = INSTRUMENTS.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+  $('instrument').value = state.inst;
+}
+function renderTunings() {
+  const inst = instrument();
+  $('tuningField').hidden = isChromatic();
+  $('stringsBox').hidden = isChromatic();
+  if (isChromatic()) return;
+  if (state.tuning > inst.tunings.length || (state.tuning === inst.tunings.length && !state.custom[inst.id])) state.tuning = 0;
+  $('tuning').innerHTML = inst.tunings.map((t, i) => `<option value="${i}">${t[0]}</option>`).join('') +
+    `<option value="${inst.tunings.length}">Personalizada</option>`;
+  $('tuning').value = state.tuning;
+}
+function renderStrings() {
+  if (isChromatic()) return;
+  const custom = isCustom();
+  $('stringRow').innerHTML = strings().map((s, i) => `
+    <div class="string-col">
+      <button type="button" class="string" data-i="${i}" aria-label="Corda ${s.solfege} ${s.oct}">${s.label}<small>${s.oct}</small></button>
+      ${custom ? `<div class="steps"><button type="button" data-step="-1" data-i="${i}" aria-label="Descer meio tom">−</button><button type="button" data-step="1" data-i="${i}" aria-label="Subir meio tom">+</button></div>` : ''}
+    </div>`).join('');
+  markStrings();
+}
+function markStrings() {
+  document.querySelectorAll('.string').forEach(b => {
+    const i = Number(b.dataset.i);
+    b.classList.toggle('locked', state.locked === i);
+    b.classList.toggle('target', state.locked == null && state.lastTarget === i);
+    b.classList.toggle('tuned', state.tuned.has(i));
+    b.setAttribute('aria-pressed', state.locked === i);
+  });
+  $('lockInfo').textContent = state.locked == null ? 'Detecção automática. Toque numa corda para fixar.' : 'Corda fixada. Toque nela de novo para soltar.';
+}
+function toneTarget() {
+  if (isChromatic()) return { midi: 69, label: 'Lá', text: 'Ouvir Lá' };
+  const ss = strings(), s = ss[state.locked ?? state.lastTarget ?? 0];
+  return { midi: s.midi, text: `Ouvir corda ${s.label}${s.oct}` };
+}
+function updateToneLabel() { if (!tonePlaying) $('toneText').textContent = toneTarget().text; }
+function resetSelection() { state.locked = null; state.lastTarget = null; state.tuned.clear(); history.length = 0; }
+function refreshAll() {
+  renderInstruments(); renderTunings(); renderStrings();
+  $('a4out').textContent = 'Lá ' + state.a4 + ' Hz';
+  updateToneLabel(); showIdle(); save();
+}
+
+$('instrument').addEventListener('change', e => {
+  state.inst = e.target.value; state.tuning = 0; resetSelection(); refreshAll();
+});
+$('tuning').addEventListener('change', e => {
+  const inst = instrument(), next = Number(e.target.value);
+  if (next === inst.tunings.length && !state.custom[inst.id]) state.custom[inst.id] = strings().map(s => s.midi);
+  state.tuning = next; resetSelection(); refreshAll();
+});
+$('stringRow').addEventListener('click', e => {
+  const step = e.target.closest('[data-step]');
+  if (step) {
+    const arr = state.custom[state.inst], i = Number(step.dataset.i);
+    arr[i] = Math.max(21, Math.min(96, arr[i] + Number(step.dataset.step)));
+    state.tuned.delete(i); renderStrings(); updateToneLabel(); save();
+    return;
+  }
+  const b = e.target.closest('.string'); if (!b) return;
+  const i = Number(b.dataset.i);
+  state.locked = state.locked === i ? null : i;
+  history.length = 0; markStrings(); updateToneLabel();
+  if (!lastHeard) showIdle();
+});
+function setA4(v) { state.a4 = Math.max(415, Math.min(466, v)); $('a4out').textContent = 'Lá ' + state.a4 + ' Hz'; save(); }
+$('a4down').addEventListener('click', () => setA4(state.a4 - 1));
+$('a4up').addEventListener('click', () => setA4(state.a4 + 1));
+
+// ---------- Áudio ----------
+let ctx = null, analyser = null, stream = null, running = false, raw = null;
+let lastRun = 0, lastHeard = 0, tonePlaying = false;
+const history = [];
+
+function audioCtx() {
+  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (ctx.state === 'suspended') ctx.resume();
+  return ctx;
+}
+async function startMic() {
+  $('msg').textContent = '';
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    $('msg').textContent = 'Este navegador não liberou o microfone para esta página. Abra o arquivo no Chrome ou no Safari, ou publique em um endereço https.';
+    return;
+  }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  } catch (err) {
+    $('msg').textContent = err && err.name === 'NotAllowedError'
+      ? 'O acesso ao microfone foi negado. Libere o microfone nas permissões do navegador e tente de novo.'
+      : 'Não foi possível abrir o microfone. Verifique se há um microfone conectado e tente de novo.';
+    return;
+  }
+  const c = audioCtx();
+  analyser = c.createAnalyser();
+  analyser.fftSize = 8192;
+  analyser.smoothingTimeConstant = 0;
+  c.createMediaStreamSource(stream).connect(analyser);
+  raw = new Float32Array(analyser.fftSize);
+  running = true;
+  $('micBtn').textContent = 'Desligar microfone';
+  $('micBtn').classList.add('on');
+  showIdle();
+  requestAnimationFrame(loop);
+}
+function stopMic() {
+  running = false;
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = null; analyser = null; history.length = 0; lastHeard = 0;
+  $('micBtn').textContent = 'Ligar microfone';
+  $('micBtn').classList.remove('on');
+  showIdle();
+}
+$('micBtn').addEventListener('click', () => { if (running) stopMic(); else { stopMetro(); startMic(); } });
+
+function loop(now) {
+  if (!running) return;
+  requestAnimationFrame(loop);
+  if (tonePlaying || now - lastRun < 45) return;
+  lastRun = now;
+  analyser.getFloatTimeDomainData(raw);
+  let sr = ctx.sampleRate, buf = raw;
+  if (sr >= 32000) { buf = decimate2(raw); sr /= 2; }
+  const hit = detectPitch(buf, sr);
+  if (hit && hit.clarity > 0.8) {
+    const midi = freqToMidi(hit.freq, state.a4);
+    // Uma mudança brusca de nota recomeça a média.
+    if (history.length && Math.abs(midi - history[history.length - 1]) > 0.7) history.length = 0;
+    history.push(midi);
+    if (history.length > 5) history.shift();
+    const med = history.slice().sort((a, b) => a - b)[history.length >> 1];
+    lastHeard = now;
+    showReading(midiToFreq(med, state.a4));
+  } else if (lastHeard && now - lastHeard > 1500) {
+    lastHeard = 0; history.length = 0; inTuneSince = 0;
+    showIdle();
+  }
+}
+
+$('toneBtn').addEventListener('click', () => {
+  if (tonePlaying) return;
+  let c;
+  try { c = audioCtx(); } catch (e) { $('msg').textContent = 'Este navegador não conseguiu tocar o som.'; return; }
+  const t = toneTarget(), f = midiToFreq(t.midi, state.a4), dur = 2.4;
+  // Harmônicos deixam as notas graves do baixo audíveis no alto-falante do celular.
+  const wave = c.createPeriodicWave(new Float32Array([0, 0, 0, 0, 0, 0, 0]), new Float32Array([0, 1, 0.55, 0.38, 0.22, 0.12, 0.07]));
+  const osc = c.createOscillator(), gain = c.createGain(), t0 = c.currentTime;
+  osc.setPeriodicWave(wave);
+  osc.frequency.value = f;
+  gain.gain.setValueAtTime(0, t0);
+  gain.gain.linearRampToValueAtTime(0.28, t0 + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  osc.connect(gain).connect(c.destination);
+  osc.start(t0); osc.stop(t0 + dur);
+  tonePlaying = true;
+  $('toneText').textContent = `Tocando ${f.toFixed(1)} Hz`;
+  osc.onended = () => { tonePlaying = false; history.length = 0; updateToneLabel(); };
+});
+
+// ---------- Metrônomo ----------
+const SIGNATURES = [
+  { label: '2/4', beats: 2, strong: [0] }, { label: '3/4', beats: 3, strong: [0] },
+  { label: '4/4', beats: 4, strong: [0] }, { label: '5/4', beats: 5, strong: [0] },
+  { label: '6/8', beats: 6, strong: [0, 3] }, { label: '7/8', beats: 7, strong: [0] },
+  { label: 'Sem acento', beats: 1, strong: [] },
+];
+const SUBDIVS = [['Sem subdivisão', 1], ['Colcheias (2)', 2], ['Tercinas (3)', 3], ['Semicolcheias (4)', 4]];
+const TEMPOS = [[40, 'Grave'], [60, 'Largo'], [66, 'Larghetto'], [76, 'Adagio'], [108, 'Andante'], [120, 'Moderato'], [156, 'Allegro'], [176, 'Vivace'], [200, 'Presto'], [Infinity, 'Prestissimo']];
+const metro = { bpm: 100, sig: 2, sub: 0, on: false, next: 0, step: 0, timer: null, queue: [], taps: [] };
+try {
+  const m = JSON.parse(localStorage.getItem('tarraxa-metro') || '{}');
+  if (m.bpm >= 30 && m.bpm <= 260) metro.bpm = Math.round(m.bpm);
+  if (SIGNATURES[m.sig]) metro.sig = m.sig;
+  if (SUBDIVS[m.sub]) metro.sub = m.sub;
+} catch (e) {}
+function saveMetro() { try { localStorage.setItem('tarraxa-metro', JSON.stringify({ bpm: metro.bpm, sig: metro.sig, sub: metro.sub })); } catch (e) {} }
+
+function renderBeats() {
+  const sig = SIGNATURES[metro.sig];
+  $('beats').innerHTML = Array.from({ length: sig.beats }, (_, i) => `<i class="${sig.strong.includes(i) ? 'strong' : ''}"></i>`).join('');
+}
+function setBpm(v) {
+  metro.bpm = Math.max(30, Math.min(260, Math.round(v)));
+  $('bpmOut').textContent = metro.bpm;
+  $('bpmRange').value = metro.bpm;
+  $('tempoName').textContent = TEMPOS.find(t => metro.bpm < t[0])[1];
+  saveMetro();
+}
+function click(time, step) {
+  const sig = SIGNATURES[metro.sig], sub = SUBDIVS[metro.sub][1];
+  const onBeat = step % sub === 0, beat = Math.floor(step / sub);
+  const strong = onBeat && sig.strong.includes(beat);
+  const osc = ctx.createOscillator(), gain = ctx.createGain();
+  osc.frequency.value = strong ? 1568 : onBeat ? 1047 : 784;
+  gain.gain.setValueAtTime(strong ? 0.6 : onBeat ? 0.4 : 0.16, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(time); osc.stop(time + 0.06);
+  if (onBeat) metro.queue.push({ time, beat });
+}
+// Agenda os cliques com antecedência no relógio do áudio, para o tempo não oscilar.
+function schedule() {
+  const sub = SUBDIVS[metro.sub][1], total = SIGNATURES[metro.sig].beats * sub;
+  while (metro.next < ctx.currentTime + 0.12) {
+    if (metro.step >= total) metro.step = 0;
+    click(metro.next, metro.step);
+    metro.next += 60 / metro.bpm / sub;
+    metro.step = (metro.step + 1) % total;
+  }
+}
+function drawBeats() {
+  if (!metro.on) return;
+  requestAnimationFrame(drawBeats);
+  let beat = null;
+  while (metro.queue.length && metro.queue[0].time <= ctx.currentTime) beat = metro.queue.shift().beat;
+  if (beat == null) return;
+  const dots = $('beats').children;
+  for (let i = 0; i < dots.length; i++) dots[i].classList.toggle('on', i === beat);
+}
+function startMetro() {
+  if (running) stopMic();
+  try { audioCtx(); } catch (e) { return; }
+  metro.on = true; metro.step = 0; metro.queue.length = 0;
+  metro.next = ctx.currentTime + 0.08;
+  schedule();
+  metro.timer = setInterval(schedule, 25);
+  requestAnimationFrame(drawBeats);
+  $('metroBtn').textContent = 'Parar';
+  $('metroBtn').classList.add('on');
+}
+function stopMetro() {
+  if (!metro.on) return;
+  metro.on = false;
+  clearInterval(metro.timer);
+  metro.queue.length = 0;
+  for (const d of $('beats').children) d.classList.remove('on');
+  $('metroBtn').textContent = 'Iniciar';
+  $('metroBtn').classList.remove('on');
+}
+$('metroBtn').addEventListener('click', () => metro.on ? stopMetro() : startMetro());
+$('bpmDown').addEventListener('click', () => setBpm(metro.bpm - 1));
+$('bpmUp').addEventListener('click', () => setBpm(metro.bpm + 1));
+$('bpmRange').addEventListener('input', e => setBpm(Number(e.target.value)));
+$('meterSig').addEventListener('change', e => { metro.sig = Number(e.target.value); metro.step = 0; renderBeats(); saveMetro(); });
+$('subdiv').addEventListener('change', e => { metro.sub = Number(e.target.value); metro.step = 0; saveMetro(); });
+$('tapBtn').addEventListener('click', () => {
+  const now = performance.now(), taps = metro.taps;
+  if (taps.length && now - taps[taps.length - 1] > 2000) taps.length = 0;
+  taps.push(now);
+  if (taps.length > 5) taps.shift();
+  if (taps.length >= 2) setBpm(60000 / ((taps[taps.length - 1] - taps[0]) / (taps.length - 1)));
+});
+
+// ---------- Abas ----------
+function showTab(name) {
+  const tuner = name === 'tuner';
+  if (tuner) stopMetro(); else { if (running) stopMic(); lastHeard = 0; showIdle(); }
+  $('viewTuner').hidden = !tuner;
+  $('viewMetro').hidden = tuner;
+  $('tabTuner').setAttribute('aria-selected', tuner);
+  $('tabMetro').setAttribute('aria-selected', !tuner);
+}
+$('tabTuner').addEventListener('click', () => showTab('tuner'));
+$('tabMetro').addEventListener('click', () => showTab('metro'));
+
+$('meterSig').innerHTML = SIGNATURES.map((x, i) => `<option value="${i}">${x.label}</option>`).join('');
+$('meterSig').value = metro.sig;
+$('subdiv').innerHTML = SUBDIVS.map((x, i) => `<option value="${i}">${x[0]}</option>`).join('');
+$('subdiv').value = metro.sub;
+renderBeats(); setBpm(metro.bpm);
+refreshAll();
+</script>
+</body>
+</html>
