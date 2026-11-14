@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'note_text.dart';
 import 'theme.dart';
 
 /// Marca: um diapasão.
@@ -94,20 +95,23 @@ class _NeedlePainter extends CustomPainter {
       canvas.drawLine(polar(radius, degrees), polar(radius - length * s, degrees), tick);
     }
 
-    void label(String text, double degrees) {
-      final painter = TextPainter(
-        text: TextSpan(text: text, style: bodyStyle(15 * s, palette.muted)),
-        textDirection: TextDirection.ltr,
-      )..layout();
+    void label(bool sharp, double degrees) {
+      final size = accidentalSize(15 * s, sharp: sharp);
       final p = polar(radius + 4 * s, degrees);
-      painter.paint(canvas, p - Offset(painter.width / 2, painter.height / 2));
+      paintAccidental(
+        canvas,
+        Rect.fromCenter(center: p, width: size.width, height: size.height),
+        sharp: sharp,
+        color: palette.muted,
+        thickness: 1.3 * s,
+      );
     }
 
-    label('♭', -_span - 6);
-    label('♯', _span + 6);
+    label(false, -_span - 6);
+    label(true, _span + 6);
 
     final needle = Paint()
-      ..color = idle ? palette.line : palette.brand
+      ..color = idle ? palette.brand.withValues(alpha: 0.25) : palette.brand
       ..strokeWidth = 3.5 * s
       ..strokeCap = StrokeCap.round;
     final degrees = cents / 50 * _span;
@@ -270,7 +274,7 @@ class LinkButton extends StatelessWidget {
             Icon(icon, color: palette.brand, size: 18),
             const SizedBox(width: 6),
             Flexible(
-              child: Text(
+              child: NoteText(
                 label,
                 overflow: TextOverflow.ellipsis,
                 style: bodyStyle(15, palette.brand, weight: FontWeight.w600),

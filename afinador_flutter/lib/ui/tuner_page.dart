@@ -9,6 +9,7 @@ import '../audio/mic_input.dart';
 import '../core/pitch.dart';
 import '../core/tunings.dart';
 import '../core/wav.dart';
+import 'note_text.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
@@ -363,7 +364,7 @@ class _TunerPageState extends State<TunerPage> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
+                        NoteText(
                           shown?.label ?? '–',
                           style: displayStyle(128, _hasReading ? p.text : p.line),
                         ),
@@ -376,7 +377,7 @@ class _TunerPageState extends State<TunerPage> {
                     ),
                     SizedBox(
                       height: 22,
-                      child: Text(shown?.solfege ?? '', style: bodyStyle(15, p.muted)),
+                      child: NoteText(shown?.solfege ?? '', style: bodyStyle(15, p.muted)),
                     ),
                     const SizedBox(height: 10),
                     Text(
@@ -495,7 +496,7 @@ class _TunerPageState extends State<TunerPage> {
         Semantics(
           button: true,
           selected: locked,
-          label: 'Corda ${note.solfege} ${note.octave}',
+          label: 'Corda ${spokenNote(note.solfege)} ${note.octave}',
           child: GestureDetector(
             onTap: () => _toggleString(index),
             child: AspectRatio(
@@ -514,7 +515,7 @@ class _TunerPageState extends State<TunerPage> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text(note.label, style: displayStyle(17, foreground).copyWith(height: 1.1)),
+                            NoteText(note.label, style: displayStyle(17, foreground).copyWith(height: 1.1)),
                             Text('${note.octave}', style: bodyStyle(10, locked ? p.onBrand : p.muted)),
                           ],
                         ),
