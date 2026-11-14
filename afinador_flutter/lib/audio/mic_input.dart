@@ -1,12 +1,16 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:typed_data';
 
 import 'package:record/record.dart';
 
 /// Capta o microfone em PCM e entrega janelas de 8192 amostras para análise,
-/// uma nova a cada 2048 amostras (cerca de 21 vezes por segundo).
+/// uma nova a cada 2048 amostras (cerca de 23 vezes por segundo).
+///
+/// 48 kHz é a taxa nativa dos celulares: gravar nela evita que o iPhone troque
+/// a taxa do hardware ao ligar o microfone, o que podia calar a saída de som.
 class MicInput {
-  static const int sampleRate = 44100;
+  static const int sampleRate = 48000;
   static const int windowSize = 8192;
   static const int hopSize = 2048;
 
@@ -23,6 +27,9 @@ class MicInput {
   /// Devolve false quando a permissão do microfone foi negada.
   Future<bool> start() async {
     if (!await _recorder.hasPermission()) return false;
+    // No iOS a sessão de áudio é do app (veja AppDelegate.swift); o plugin
+    // não deve trocá-la ao gravar.
+    if (Platform.isIOS) await _recorder.ios?.manageAudioSession(false);
     final stream = await _recorder.startStream(
       const RecordConfig(
         encoder: AudioEncoder.pcm16bits,

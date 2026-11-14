@@ -2,6 +2,8 @@ import 'dart:typed_data';
 
 import 'package:flutter_soloud/flutter_soloud.dart';
 
+import '../core/wav.dart';
+
 /// Saída de áudio: nota de referência (uma vez) e compasso do metrônomo (em laço).
 class AudioOut {
   bool _ready = false;
@@ -11,7 +13,7 @@ class AudioOut {
 
   Future<void> _ensureReady() async {
     if (_ready) return;
-    await SoLoud.instance.init();
+    await SoLoud.instance.init(sampleRate: outputSampleRate, channels: Channels.mono);
     _ready = true;
   }
 

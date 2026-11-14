@@ -2,7 +2,8 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-const int outputSampleRate = 44100;
+/// 48 kHz, a taxa nativa dos celulares: o som não passa por conversão.
+const int outputSampleRate = 48000;
 
 /// WAV mono de 16 bits a partir de amostras entre -1 e 1.
 Uint8List wavFromSamples(Float32List samples, {int sampleRate = outputSampleRate}) {

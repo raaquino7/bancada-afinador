@@ -65,7 +65,7 @@ void main() {
 
   test('compasso do metrônomo tem a duração exata', () {
     final bar = metronomeBar(bpm: 120, beats: 4, strongBeats: const [0], subdivision: 2);
-    expect(bar.length, 44100 * 2);
+    expect(bar.length, outputSampleRate * 2);
     final wav = wavFromSamples(bar);
     expect(wav.length, 44 + bar.length * 2);
   });
