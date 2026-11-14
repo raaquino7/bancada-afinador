@@ -6,8 +6,8 @@ import 'package:flutter_soloud/flutter_soloud.dart';
 class AudioOut {
   bool _ready = false;
   int _counter = 0;
-  dynamic _loopSource;
-  dynamic _loopHandle;
+  AudioSource? _loopSource;
+  SoundHandle? _loopHandle;
 
   Future<void> _ensureReady() async {
     if (_ready) return;
@@ -18,7 +18,7 @@ class AudioOut {
   Future<void> playOnce(Uint8List wav, Duration length) async {
     await _ensureReady();
     final source = await SoLoud.instance.loadMem('nota_${_counter++}.wav', wav);
-    await SoLoud.instance.play(source);
+    SoLoud.instance.play(source);
     Future<void>.delayed(length + const Duration(seconds: 1), () async {
       await SoLoud.instance.disposeSource(source);
     });
@@ -29,7 +29,7 @@ class AudioOut {
     await stopLoop();
     final source = await SoLoud.instance.loadMem('compasso_${_counter++}.wav', wav);
     _loopSource = source;
-    _loopHandle = await SoLoud.instance.play(source, looping: true);
+    _loopHandle = SoLoud.instance.play(source, looping: true);
   }
 
   Future<void> stopLoop() async {

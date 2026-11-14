@@ -1,5 +1,3 @@
-import 'dart:ui' show FontVariation;
-
 import 'package:flutter/material.dart';
 
 /// Identidade: tela neutra, azul-cobalto só na marca, na agulha e no botão
