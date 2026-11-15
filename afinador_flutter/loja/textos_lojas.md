@@ -34,6 +34,28 @@ subtítulo, que a App Store já usa na busca; sem nomes de outros apps ou marcas
 cavaquinho,baixo,bandolim,violino,cromático,afinar,diapasão,tuner,bpm,tempo,corda,instrumento
 ```
 
+## Capturas de tela e gráficos
+
+Conferidos por `python3 loja/conferir_capturas.py`. Ordem sugerida de envio: 1 a 5.
+
+| Loja | Pasta | Tamanho | Regra oficial |
+|---|---|---|---|
+| App Store, iPhone | capturas/iPhone_17_Pro | 1206 × 2622 | obrigatório: iPhone com Dynamic Island (tela média) |
+| App Store, iPad | capturas/iPad_Pro_13inch_M5 | 2064 × 2752 | obrigatório se o app roda no iPad: iPad 13" |
+| Google Play, celular | capturas/Android_1080x1920 | 1080 × 1920 | 2 a 8; lado maior até o dobro do menor |
+| Google Play, destaque | google_play_destaque_1024x500.png | 1024 × 500 | obrigatório |
+| Google Play, ícone | google_play_icone_512.png | 512 × 512 | obrigatório |
+
+1. Afinando: violão, corda Lá um pouco baixa (−21 cents).
+2. Afinado: a tela fica verde.
+3. Metrônomo tocando.
+4. Lista de instrumentos.
+5. Tema escuro: ukulele, corda Sol um pouco alta.
+
+As leituras das telas 1, 2 e 5 vêm da detecção de verdade do app, alimentada por
+um tom sintético (modo de captura, só em debug: `--dart-define=CAPTURA_HZ=...`).
+Roteiro em `tool/captura.sh`.
+
 ## Endereços (GitHub Pages)
 
 - Política de privacidade (as duas lojas): https://raaquino7.github.io/bancada-afinador/privacidade.html
