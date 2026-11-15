@@ -48,6 +48,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -98,3 +100,34 @@ flutter:
     - family: InstrumentSans
       fonts:
         - asset: assets/fonts/InstrumentSans.ttf
+
+# Ícone do app: diapasão branco sobre azul-cobalto. Imagens geradas por
+# tool/gerar_icones_test.dart. Para aplicar: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icon/icone.png
+  remove_alpha_ios: true
+  background_color_ios: "#2747F5"
+  image_path_ios_dark_transparent: assets/icon/icone_escuro.png
+  image_path_ios_tinted_grayscale: assets/icon/icone_tingido.png
+  adaptive_icon_background: "#2747F5"
+  adaptive_icon_foreground: assets/icon/adaptativo_frente.png
+  # A imagem já respeita a zona segura de 66 dp; não precisa de margem extra.
+  adaptive_icon_foreground_inset: 0
+  adaptive_icon_monochrome: assets/icon/adaptativo_mono.png
+  min_sdk_android: 24
+
+# Tela de abertura: tela neutra com o diapasão na cor da marca, clara e escura.
+# Para aplicar: dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#F4F4F1"
+  image: assets/splash/abertura.png
+  color_dark: "#0E1014"
+  image_dark: assets/splash/abertura_escura.png
+  android_12:
+    color: "#F4F4F1"
+    image: assets/splash/abertura_android12.png
+    color_dark: "#0E1014"
+    image_dark: assets/splash/abertura_android12_escura.png
+  web: false

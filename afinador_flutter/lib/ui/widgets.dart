@@ -22,25 +22,33 @@ class _ForkPainter extends CustomPainter {
   final Color color;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final s = size.width / 24;
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.4 * s
-      ..strokeCap = StrokeCap.round;
-    final path = Path()
-      ..moveTo(7 * s, 3 * s)
-      ..lineTo(7 * s, 11 * s)
-      ..arcToPoint(Offset(17 * s, 11 * s), radius: Radius.circular(5 * s), clockwise: false)
-      ..lineTo(17 * s, 3 * s)
-      ..moveTo(12 * s, 16 * s)
-      ..lineTo(12 * s, 21 * s);
-    canvas.drawPath(path, paint);
-  }
+  void paint(Canvas canvas, Size size) => paintFork(canvas, Offset.zero & size, color);
 
   @override
   bool shouldRepaint(_ForkPainter oldDelegate) => oldDelegate.color != color;
+}
+
+/// Desenha o diapasão da marca dentro de [rect] (quadrado de 24 unidades).
+/// O mesmo desenho gera o ícone do app (tool/gerar_icones_test.dart).
+void paintFork(Canvas canvas, Rect rect, Color color, {double stroke = 2.4}) {
+  final s = rect.width / 24;
+  final o = rect.topLeft;
+  final paint = Paint()
+    ..color = color
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = stroke * s
+    ..strokeCap = StrokeCap.round
+    ..strokeJoin = StrokeJoin.round
+    ..isAntiAlias = true;
+  Offset p(double x, double y) => o + Offset(x * s, y * s);
+  final path = Path()
+    ..moveTo(p(7, 3).dx, p(7, 3).dy)
+    ..lineTo(p(7, 11).dx, p(7, 11).dy)
+    ..arcToPoint(p(17, 11), radius: Radius.circular(5 * s), clockwise: false)
+    ..lineTo(p(17, 3).dx, p(17, 3).dy)
+    ..moveTo(p(12, 16).dx, p(12, 16).dy)
+    ..lineTo(p(12, 21).dx, p(12, 21).dy);
+  canvas.drawPath(path, paint);
 }
 
 /// Mostrador de agulha: de -50 a +50 cents.
