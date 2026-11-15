@@ -26,6 +26,8 @@
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
+		<key>ITSAppUsesNonExemptEncryption</key>
+		<false/>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>O microfone é usado para ouvir a corda e mostrar se ela está afinada. O som não é gravado nem enviado.</string>
 		<key>UIApplicationSceneManifest</key>
