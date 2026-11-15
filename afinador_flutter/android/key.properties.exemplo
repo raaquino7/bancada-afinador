@@ -1,0 +1,7 @@
+# Copie para android/key.properties (que fica fora do git) e preencha.
+# Nunca coloque este arquivo preenchido nem o .jks no repositório.
+storePassword=
+keyPassword=
+keyAlias=upload
+# Caminho absoluto, fora do repositório. Exemplo:
+storeFile=/Users/SEU_USUARIO/chaves/afinador-upload.jks
