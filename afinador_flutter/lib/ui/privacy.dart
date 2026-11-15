@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'theme.dart';
 
 /// Política de privacidade dentro do app (o Google Play exige o acesso por
-/// dentro do app). Mesmo conteúdo de loja/privacidade.html, em versão curta.
+/// dentro do app). Mesmo conteúdo de docs/privacidade.html, em versão curta.
 const List<(String, String)> privacySections = [
   ('', 'O app não coleta, não grava e não envia nenhum dado seu.'),
   (

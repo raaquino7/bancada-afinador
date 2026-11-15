@@ -40,13 +40,12 @@ cavaquinho,baixo,bandolim,violino,cromático,afinar,diapasão,tuner,bpm,tempo,co
   transmitir dados para fora do aparelho; o que é processado só no aparelho não é coletado.
 - **Google Play, Segurança dos dados:** o app não coleta nem compartilha dados.
   O Google define coletar como transmitir dados para fora do aparelho do usuário.
-- **Política de privacidade:** [privacidade.html](privacidade.html). As duas lojas exigem
+- **Política de privacidade:** [docs/privacidade.html](../../docs/privacidade.html), publicada pelo GitHub Pages. As duas lojas exigem
   um endereço público (https, página comum, não PDF). O Google Play também exige o link
   dentro do app: está no rodapé ("Privacidade").
 
 ## Pendências (dependem de você)
 
-- Endereço público onde a política vai ficar (por exemplo GitHub Pages).
 - E-mail de contato para a política e para o suporte. A App Store exige um endereço de
   suporte com informação de contato.
 - Preço: os textos não falam de preço.
