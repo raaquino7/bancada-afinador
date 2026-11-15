@@ -46,6 +46,4 @@ cavaquinho,baixo,bandolim,violino,cromático,afinar,diapasão,tuner,bpm,tempo,co
 
 ## Pendências (dependem de você)
 
-- E-mail de contato para a política e para o suporte. A App Store exige um endereço de
-  suporte com informação de contato.
 - Preço: os textos não falam de preço.
