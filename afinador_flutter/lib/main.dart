@@ -8,8 +8,16 @@ import 'ui/tuner_page.dart';
 import 'ui/widgets.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  final binding = WidgetsFlutterBinding.ensureInitialized();
+  // Celular fica em retrato. Tablet aceita qualquer orientação: no iPadOS 26 a
+  // janela do app pode ter qualquer tamanho e formato, e o layout se ajusta.
+  final display = binding.platformDispatcher.displays.firstOrNull;
+  final isTablet =
+      display != null &&
+      (display.size / display.devicePixelRatio).shortestSide >= 600;
+  if (!isTablet) {
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  }
   runApp(const AfinadorApp());
 }
 
@@ -21,8 +29,16 @@ class AfinadorApp extends StatelessWidget {
     return MaterialApp(
       title: 'Afinador',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true, fontFamily: bodyFont, brightness: Brightness.light),
-      darkTheme: ThemeData(useMaterial3: true, fontFamily: bodyFont, brightness: Brightness.dark),
+      theme: ThemeData(
+        useMaterial3: true,
+        fontFamily: bodyFont,
+        brightness: Brightness.light,
+      ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        fontFamily: bodyFont,
+        brightness: Brightness.dark,
+      ),
       home: const HomeScreen(),
     );
   }
@@ -67,60 +83,83 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final p = (_inTune && _tab == 0) ? Palette.inTune : base;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: (dark && !(_inTune && _tab == 0)) ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      value: (dark && !(_inTune && _tab == 0))
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
       child: Scaffold(
         body: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           color: p.bg,
           child: SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          ForkIcon(color: p.brand),
-                          const SizedBox(width: 8),
-                          Text('afinador', style: displayStyle(21, p.text).copyWith(height: 1.2)),
-                          const Spacer(),
-                          _tabs(p),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Expanded(
-                        child: IndexedStack(
-                          index: _tab,
-                          children: [
-                            TunerPage(
-                              palette: p,
-                              active: _foreground && _tab == 0,
-                              audio: _audio,
-                              onTunedChanged: (tuned) => setState(() => _inTune = tuned),
-                            ),
-                            MetronomePage(
-                              palette: p,
-                              active: _foreground && _tab == 1,
-                              audio: _audio,
-                            ),
-                          ],
+            child: _ScaleUp(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Numa janela muito estreita (multitarefa do iPad) fica só o diapasão.
+                        LayoutBuilder(
+                          builder: (context, constraints) => Row(
+                            children: [
+                              ForkIcon(color: p.brand),
+                              if (constraints.maxWidth >= 300) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  'afinador',
+                                  style: displayStyle(
+                                    21,
+                                    p.text,
+                                  ).copyWith(height: 1.2),
+                                ),
+                              ],
+                              const Spacer(),
+                              _tabs(p),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text.rich(
-                        TextSpan(
-                          text: 'um app ',
-                          style: bodyStyle(11.5, p.muted),
-                          children: [
-                            TextSpan(text: 'Bancada', style: bodyStyle(11.5, p.text, weight: FontWeight.w600)),
-                          ],
+                        const SizedBox(height: 16),
+                        Expanded(
+                          child: IndexedStack(
+                            index: _tab,
+                            children: [
+                              TunerPage(
+                                palette: p,
+                                active: _foreground && _tab == 0,
+                                audio: _audio,
+                                onTunedChanged: (tuned) =>
+                                    setState(() => _inTune = tuned),
+                              ),
+                              MetronomePage(
+                                palette: p,
+                                active: _foreground && _tab == 1,
+                                audio: _audio,
+                              ),
+                            ],
+                          ),
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                        const SizedBox(height: 10),
+                        Text.rich(
+                          TextSpan(
+                            text: 'um app ',
+                            style: bodyStyle(11.5, p.muted),
+                            children: [
+                              TextSpan(
+                                text: 'Bancada',
+                                style: bodyStyle(
+                                  11.5,
+                                  p.text,
+                                  weight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -147,7 +186,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
             child: Text(
               label,
-              style: bodyStyle(13, selected ? p.bg : p.muted, weight: FontWeight.w600),
+              style: bodyStyle(
+                13,
+                selected ? p.bg : p.muted,
+                weight: FontWeight.w600,
+              ),
             ),
           ),
         ),
@@ -164,6 +207,41 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         mainAxisSize: MainAxisSize.min,
         children: [tab('Afinador', 0), tab('Metrônomo', 1)],
       ),
+    );
+  }
+}
+
+/// Em telas grandes (iPad, tablet) amplia o app inteiro por igual, até 1,6×,
+/// para o mostrador não ficar pequeno no meio da tela. Em celular não muda nada.
+class _ScaleUp extends StatelessWidget {
+  const _ScaleUp({required this.child});
+
+  final Widget child;
+
+  static const double _baseWidth = 500;
+  static const double _baseHeight = 900;
+  static const double _maxScale = 1.6;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final h = constraints.maxHeight;
+        final scale =
+            (w / _baseWidth < h / _baseHeight
+                    ? w / _baseWidth
+                    : h / _baseHeight)
+                .clamp(1.0, _maxScale);
+        if (scale == 1.0) return child;
+        return SizedBox(
+          width: w,
+          height: h,
+          child: FittedBox(
+            child: SizedBox(width: w / scale, height: h / scale, child: child),
+          ),
+        );
+      },
     );
   }
 }
