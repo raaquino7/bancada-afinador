@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -40,6 +42,8 @@ class AfinadorApp extends StatelessWidget {
         fontFamily: bodyFont,
         brightness: Brightness.dark,
       ),
+      // Em telas grandes, amplia tudo (inclusive menus e painéis).
+      builder: (context, child) => _ScaleUp(child: child!),
       home: const HomeScreen(),
     );
   }
@@ -92,92 +96,90 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           duration: const Duration(milliseconds: 200),
           color: p.bg,
           child: SafeArea(
-            child: _ScaleUp(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 460),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Numa janela muito estreita (multitarefa do iPad) fica só o diapasão.
-                        LayoutBuilder(
-                          builder: (context, constraints) => Row(
-                            children: [
-                              ForkIcon(color: p.brand),
-                              if (constraints.maxWidth >= 300) ...[
-                                const SizedBox(width: 8),
-                                Text(
-                                  'afinador',
-                                  style: displayStyle(
-                                    21,
-                                    p.text,
-                                  ).copyWith(height: 1.2),
-                                ),
-                              ],
-                              const Spacer(),
-                              _tabs(p),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Expanded(
-                          child: IndexedStack(
-                            index: _tab,
-                            children: [
-                              TunerPage(
-                                palette: p,
-                                active: _foreground && _tab == 0,
-                                audio: _audio,
-                                onTunedChanged: (tuned) =>
-                                    setState(() => _inTune = tuned),
-                              ),
-                              MetronomePage(
-                                palette: p,
-                                active: _foreground && _tab == 1,
-                                audio: _audio,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Numa janela muito estreita (multitarefa do iPad) fica só o diapasão.
+                      LayoutBuilder(
+                        builder: (context, constraints) => Row(
                           children: [
-                            Text.rich(
-                              TextSpan(
-                                text: 'um app ',
-                                style: bodyStyle(11.5, p.muted),
-                                children: [
-                                  TextSpan(
-                                    text: 'Bancada',
-                                    style: bodyStyle(
-                                      11.5,
-                                      p.text,
-                                      weight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
+                            ForkIcon(color: p.brand),
+                            if (constraints.maxWidth >= 300) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                'afinador',
+                                style: displayStyle(
+                                  21,
+                                  p.text,
+                                ).copyWith(height: 1.2),
                               ),
+                            ],
+                            const Spacer(),
+                            _tabs(p),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: IndexedStack(
+                          index: _tab,
+                          children: [
+                            TunerPage(
+                              palette: p,
+                              active: _foreground && _tab == 0,
+                              audio: _audio,
+                              onTunedChanged: (tuned) =>
+                                  setState(() => _inTune = tuned),
                             ),
-                            Text('  ·  ', style: bodyStyle(11.5, p.muted)),
-                            Semantics(
-                              button: true,
-                              child: GestureDetector(
-                                onTap: () => showPrivacy(context, p),
-                                child: Text(
-                                  'Privacidade',
-                                  style: bodyStyle(11.5, p.muted).copyWith(
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                              ),
+                            MetronomePage(
+                              palette: p,
+                              active: _foreground && _tab == 1,
+                              audio: _audio,
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text.rich(
+                            TextSpan(
+                              text: 'um app ',
+                              style: bodyStyle(11.5, p.muted),
+                              children: [
+                                TextSpan(
+                                  text: 'Bancada',
+                                  style: bodyStyle(
+                                    11.5,
+                                    p.text,
+                                    weight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text('  ·  ', style: bodyStyle(11.5, p.muted)),
+                          Semantics(
+                            button: true,
+                            child: GestureDetector(
+                              onTap: () => showPrivacy(context, p),
+                              child: Text(
+                                'Privacidade',
+                                style: bodyStyle(11.5, p.muted).copyWith(
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -230,7 +232,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 }
 
 /// Em telas grandes (iPad, tablet) amplia o app inteiro por igual, até 1,6×,
-/// para o mostrador não ficar pequeno no meio da tela. Em celular não muda nada.
+/// para o mostrador não ficar pequeno no meio da tela. Envolve o Navigator,
+/// então menus e painéis também crescem. Em celular não muda nada.
 class _ScaleUp extends StatelessWidget {
   const _ScaleUp({required this.child});
 
@@ -242,24 +245,26 @@ class _ScaleUp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final w = constraints.maxWidth;
-        final h = constraints.maxHeight;
-        final scale =
-            (w / _baseWidth < h / _baseHeight
-                    ? w / _baseWidth
-                    : h / _baseHeight)
-                .clamp(1.0, _maxScale);
-        if (scale == 1.0) return child;
-        return SizedBox(
-          width: w,
-          height: h,
-          child: FittedBox(
-            child: SizedBox(width: w / scale, height: h / scale, child: child),
+    final mq = MediaQuery.of(context);
+    final size = mq.size;
+    final scale = math
+        .min(size.width / _baseWidth, size.height / _baseHeight)
+        .clamp(1.0, _maxScale);
+    if (scale == 1.0) return child;
+    return FittedBox(
+      child: SizedBox(
+        width: size.width / scale,
+        height: size.height / scale,
+        child: MediaQuery(
+          data: mq.copyWith(
+            size: size / scale,
+            padding: mq.padding / scale,
+            viewPadding: mq.viewPadding / scale,
+            viewInsets: mq.viewInsets / scale,
           ),
-        );
-      },
+          child: child,
+        ),
+      ),
     );
   }
 }

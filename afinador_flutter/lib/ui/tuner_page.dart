@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
+import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,8 +35,15 @@ class TunerPage extends StatefulWidget {
   State<TunerPage> createState() => _TunerPageState();
 }
 
+/// Modo de captura de tela, só em debug: `--dart-define=CAPTURA_HZ=108.7`.
+/// "Ligar microfone" passa a alimentar a detecção de verdade com um tom
+/// sintético nessa frequência, em vez do microfone. Em release é ignorado.
+const String _capturaHz = String.fromEnvironment('CAPTURA_HZ');
+final double? _captureFreq = kDebugMode ? double.tryParse(_capturaHz) : null;
+
 class _TunerPageState extends State<TunerPage> {
   final MicInput _mic = MicInput();
+  Timer? _captureTimer;
   final Stopwatch _clock = Stopwatch()..start();
 
   int _instrument = 1; // Violão
@@ -86,6 +95,7 @@ class _TunerPageState extends State<TunerPage> {
 
   @override
   void dispose() {
+    _captureTimer?.cancel();
     _mic.dispose();
     super.dispose();
   }
@@ -132,6 +142,11 @@ class _TunerPageState extends State<TunerPage> {
 
   Future<void> _startMic() async {
     setState(() => _message = '');
+    final captureFreq = _captureFreq;
+    if (captureFreq != null) {
+      _startCapture(captureFreq);
+      return;
+    }
     bool granted;
     try {
       granted = await _mic.start();
@@ -148,7 +163,27 @@ class _TunerPageState extends State<TunerPage> {
     setState(() => _running = true);
   }
 
+  void _startCapture(double freq) {
+    const rate = MicInput.sampleRate;
+    var phase = 0;
+    setState(() => _running = true);
+    _captureTimer = Timer.periodic(const Duration(milliseconds: 43), (_) {
+      final window = Float32List(MicInput.windowSize);
+      for (var i = 0; i < window.length; i++) {
+        final t = (phase + i) / rate;
+        // Fundamental com dois harmônicos, como uma corda.
+        window[i] = 0.5 * math.sin(2 * math.pi * freq * t) +
+            0.25 * math.sin(4 * math.pi * freq * t) +
+            0.1 * math.sin(6 * math.pi * freq * t);
+      }
+      phase += MicInput.hopSize;
+      _onWindow(window);
+    });
+  }
+
   Future<void> _stopMic() async {
+    _captureTimer?.cancel();
+    _captureTimer = null;
     _running = false;
     await _mic.stop();
     if (!mounted) return;
