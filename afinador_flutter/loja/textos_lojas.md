@@ -34,6 +34,12 @@ subtítulo, que a App Store já usa na busca; sem nomes de outros apps ou marcas
 cavaquinho,baixo,bandolim,violino,cromático,afinar,diapasão,tuner,bpm,tempo,corda,instrumento
 ```
 
+## Endereços (GitHub Pages)
+
+- Política de privacidade (as duas lojas): https://raaquino7.github.io/bancada-afinador/privacidade.html
+- Suporte (App Store) e site do app: https://raaquino7.github.io/bancada-afinador/
+- E-mail de contato: aquino.rafael@gmail.com
+
 ## Privacidade nas lojas
 
 - **App Store, Privacidade do app:** "Dados não coletados". A Apple define coletar como
