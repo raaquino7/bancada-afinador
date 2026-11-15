@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'audio/audio_out.dart';
 import 'ui/metronome_page.dart';
+import 'ui/privacy.dart';
 import 'ui/theme.dart';
 import 'ui/tuner_page.dart';
 import 'ui/widgets.dart';
@@ -141,22 +142,39 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        Text.rich(
-                          TextSpan(
-                            text: 'um app ',
-                            style: bodyStyle(11.5, p.muted),
-                            children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text.rich(
                               TextSpan(
-                                text: 'Bancada',
-                                style: bodyStyle(
-                                  11.5,
-                                  p.text,
-                                  weight: FontWeight.w600,
+                                text: 'um app ',
+                                style: bodyStyle(11.5, p.muted),
+                                children: [
+                                  TextSpan(
+                                    text: 'Bancada',
+                                    style: bodyStyle(
+                                      11.5,
+                                      p.text,
+                                      weight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text('  ·  ', style: bodyStyle(11.5, p.muted)),
+                            Semantics(
+                              button: true,
+                              child: GestureDetector(
+                                onTap: () => showPrivacy(context, p),
+                                child: Text(
+                                  'Privacidade',
+                                  style: bodyStyle(11.5, p.muted).copyWith(
+                                    decoration: TextDecoration.underline,
+                                  ),
                                 ),
                               ),
-                            ],
-                          ),
-                          textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
                       ],
                     ),

@@ -46,4 +46,17 @@ void main() {
       });
     }
   }
+
+  testWidgets('Rodapé abre a política de privacidade', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(402, 874);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(const AfinadorApp());
+    await tester.tap(find.text('Privacidade'));
+    await tester.pumpAndSettle();
+    expect(find.text('Política de privacidade'), findsOneWidget);
+    expect(find.text('Microfone'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
