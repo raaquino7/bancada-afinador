@@ -5,6 +5,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../audio/audio_out.dart';
+import '../core/metronome_engine.dart';
 import '../core/wav.dart';
 import 'theme.dart';
 import 'widgets.dart';
@@ -70,9 +71,9 @@ class _MetronomePageState extends State<MetronomePage> with SingleTickerProvider
   int _beat = -1;
   String _message = '';
 
-  final Stopwatch _stopwatch = Stopwatch();
   late final Ticker _ticker;
-  Timer? _restartTimer;
+  MetronomeEngine? _engine;
+  Timer? _pump;
   final List<int> _taps = [];
   final Stopwatch _tapClock = Stopwatch()..start();
 
@@ -91,9 +92,9 @@ class _MetronomePageState extends State<MetronomePage> with SingleTickerProvider
 
   @override
   void dispose() {
-    _restartTimer?.cancel();
+    _pump?.cancel();
     _ticker.dispose();
-    widget.audio.stopLoop();
+    widget.audio.stopStream();
     super.dispose();
   }
 
@@ -121,58 +122,77 @@ class _MetronomePageState extends State<MetronomePage> with SingleTickerProvider
 
   // ---------- Som ----------
 
+  /// Quanto áudio fica na fila à frente do que está tocando. Uma mudança de
+  /// andamento chega ao ouvido em no máximo esse tempo, sem pausa.
+  static const int _leadSamples = outputSampleRate * 150 ~/ 1000;
+  static const int _blockSamples = 1024;
+
   Future<void> _start() async {
     final signature = _signatures[_signature];
-    final wav = wavFromSamples(
-      metronomeBar(
-        bpm: _bpm,
-        beats: signature.beats,
-        strongBeats: signature.strong,
-        subdivision: _subdivision + 1,
-      ),
+    final engine = MetronomeEngine(
+      sampleRate: outputSampleRate,
+      bpm: _bpm,
+      beats: signature.beats,
+      strongBeats: signature.strong,
+      subdivision: _subdivision + 1,
     );
     try {
-      await widget.audio.startLoop(wav);
+      await widget.audio.startStream(engine.render(_leadSamples));
     } catch (_) {
       if (mounted) setState(() => _message = 'Não foi possível tocar o som.');
       return;
     }
     if (!mounted) return;
-    _stopwatch
-      ..reset()
-      ..start();
+    _engine = engine;
+    _pump?.cancel();
+    _pump = Timer.periodic(const Duration(milliseconds: 20), (_) => _feed());
     if (!_ticker.isActive) _ticker.start();
     setState(() {
       _on = true;
-      _beat = 0;
+      _beat = -1;
       _message = '';
     });
   }
 
+  /// Completa a fila até [_leadSamples] à frente do que já tocou.
+  void _feed() {
+    final engine = _engine;
+    if (engine == null) return;
+    final played = widget.audio.playedSamples;
+    final missing = _leadSamples - (engine.written - played);
+    if (missing <= 0) return;
+    final frames = ((missing + _blockSamples - 1) ~/ _blockSamples) * _blockSamples;
+    widget.audio.pushSamples(engine.render(frames));
+  }
+
   Future<void> _stop() async {
-    _restartTimer?.cancel();
+    _pump?.cancel();
+    _pump = null;
+    _engine = null;
     if (_ticker.isActive) _ticker.stop();
-    _stopwatch.stop();
     _on = false;
-    await widget.audio.stopLoop();
+    await widget.audio.stopStream();
     if (mounted) setState(() => _beat = -1);
   }
 
-  /// Com o metrônomo ligado, uma mudança recomeça o compasso após uma pausa curta.
-  void _changed() {
+  /// Compasso ou subdivisão novos: valem a partir do próximo clique, que passa
+  /// a ser o primeiro tempo.
+  void _meterChanged() {
     _savePrefs();
-    if (!_on) return;
-    _restartTimer?.cancel();
-    _restartTimer = Timer(const Duration(milliseconds: 250), () {
-      if (_on) _start();
-    });
+    final signature = _signatures[_signature];
+    _engine?.setMeter(
+      beats: signature.beats,
+      strongBeats: signature.strong,
+      subdivision: _subdivision + 1,
+    );
   }
 
+  /// Acende a bolinha do tempo que está saindo no alto-falante agora.
   void _onTick(Duration elapsed) {
-    final beatMicros = 60000000 / _bpm;
-    final beats = _signatures[_signature].beats;
-    final beat = (_stopwatch.elapsedMicroseconds / beatMicros).floor() % beats;
-    if (beat != _beat) setState(() => _beat = beat);
+    final engine = _engine;
+    if (engine == null) return;
+    final mark = engine.beatAt(widget.audio.playedSamples);
+    if (mark != null && mark.beat != _beat) setState(() => _beat = mark.beat);
   }
 
   // ---------- Controles ----------
@@ -181,7 +201,8 @@ class _MetronomePageState extends State<MetronomePage> with SingleTickerProvider
     final clamped = value.clamp(30, 260).toInt();
     if (clamped == _bpm) return;
     setState(() => _bpm = clamped);
-    _changed();
+    _engine?.bpm = clamped;
+    _savePrefs();
   }
 
   void _tap() {
@@ -212,7 +233,7 @@ class _MetronomePageState extends State<MetronomePage> with SingleTickerProvider
                 labels: [for (final s in _signatures) s.label],
                 onChanged: (v) {
                   setState(() => _signature = v);
-                  _changed();
+                  _meterChanged();
                 },
                 palette: p,
               ),
@@ -224,7 +245,7 @@ class _MetronomePageState extends State<MetronomePage> with SingleTickerProvider
                 labels: _subdivisionLabels,
                 onChanged: (v) {
                   setState(() => _subdivision = v);
-                  _changed();
+                  _meterChanged();
                 },
                 palette: p,
               ),

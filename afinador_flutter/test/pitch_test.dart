@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:afinador/core/pitch.dart';
 import 'package:afinador/core/tunings.dart';
-import 'package:afinador/core/wav.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Corda dedilhada sintética: harmônicos fortes, fundamental fraca e ruído.
@@ -61,12 +60,5 @@ void main() {
     expect(Note.fromMidi(40).octave, 2);
     expect(midiToFreq(69, 440), closeTo(440, 1e-9));
     expect(freqToMidi(82.4069, 440), closeTo(40, 1e-3));
-  });
-
-  test('compasso do metrônomo tem a duração exata', () {
-    final bar = metronomeBar(bpm: 120, beats: 4, strongBeats: const [0], subdivision: 2);
-    expect(bar.length, outputSampleRate * 2);
-    final wav = wavFromSamples(bar);
-    expect(wav.length, 44 + bar.length * 2);
   });
 }

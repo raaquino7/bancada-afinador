@@ -53,32 +53,3 @@ Float32List toneSamples(double freq, {double seconds = 2.4, int sampleRate = out
   }
   return out;
 }
-
-/// Um compasso inteiro do metrônomo, com os cliques em posições exatas de amostra.
-/// Tocado em laço, o andamento não oscila.
-Float32List metronomeBar({
-  required int bpm,
-  required int beats,
-  required List<int> strongBeats,
-  required int subdivision,
-  int sampleRate = outputSampleRate,
-}) {
-  final steps = beats * subdivision;
-  final stepSamples = sampleRate * 60.0 / bpm / subdivision;
-  final total = (steps * stepSamples).round();
-  final out = Float32List(total);
-  final clickLen = (0.05 * sampleRate).round();
-  final decay = math.log(0.001) / 0.05;
-  for (var s = 0; s < steps; s++) {
-    final onBeat = s % subdivision == 0;
-    final strong = onBeat && strongBeats.contains(s ~/ subdivision);
-    final freq = strong ? 1568.0 : (onBeat ? 1047.0 : 784.0);
-    final amp = strong ? 0.6 : (onBeat ? 0.4 : 0.16);
-    final start = (s * stepSamples).round();
-    for (var i = 0; i < clickLen && start + i < total; i++) {
-      final t = i / sampleRate;
-      out[start + i] += amp * math.exp(decay * t) * math.sin(2 * math.pi * freq * t);
-    }
-  }
-  return out;
-}
